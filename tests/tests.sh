@@ -147,6 +147,7 @@ SUDO=
 STOP=
 CLEAN=yes
 UPDATE=
+VERBOSE_CI=
 VERBOSE_COMMANDS=
 VERBOSE_ERRORS=
 VERBOSE_SKIPPED=
@@ -180,6 +181,9 @@ for arg; do
             ;;
         --update)
             UPDATE=yes
+            ;;
+        --verbose=ci)
+            VERBOSE_CI=yes
             ;;
         --verbose=commands)
             VERBOSE_COMMANDS=yes
@@ -534,7 +538,12 @@ function bfs_diff() (
 )
 
 function skip() {
-    if [ "$VERBOSE_SKIPPED" ]; then
+    if [ "$VERBOSE_CI" ]; then
+        caller | {
+            read -r line file
+            printf "\n::notice file=%s,line=%d::%s skipped!\n" "tests/$TEST.sh" "$line" "$TEST"
+        }
+    elif [ "$VERBOSE_SKIPPED" ]; then
         caller | {
             read -r line file
             printf "${BOL}${CYN}%s skipped!${RST} (%s)\n" "$TEST" "$(awk "NR == $line" "$file")"

@@ -283,6 +283,10 @@ endif
 	+$(MAKE) check-install $(DISTCHECK_FLAGS)
 .PHONY: distcheck
 
+ci:
+	+$(MAKE) distcheck DISTCHECK_FLAGS='TEST_FLAGS="--sudo --verbose=ci"'
+.PHONY: ci
+
 clean:
 	$(RM) -r $(BIN) $(OBJ)
 .PHONY: clean
