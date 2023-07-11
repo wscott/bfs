@@ -490,15 +490,14 @@ static int bftw_state_init(struct bftw_state *state, const struct bftw_args *arg
 		errno = EMFILE;
 		return -1;
 	}
+	size_t nopenfd = args->nopenfd;
 
 	state->path = dstralloc(0);
 	if (!state->path) {
 		return -1;
 	}
 
-	bftw_cache_init(&state->cache, args->nopenfd);
-
-	size_t qdepth = args->nopenfd - 1;
+	size_t qdepth = nopenfd;
 	if (qdepth > 1024) {
 		qdepth = 1024;
 	}
@@ -507,6 +506,14 @@ static int bftw_state_init(struct bftw_state *state, const struct bftw_args *arg
 	if (nthreads > qdepth) {
 		nthreads = qdepth;
 	}
+
+#if BFS_USE_LIBURING
+	// io_uring uses one fd per ring, ioq uses one ring per thread
+	if (nthreads >= nopenfd) {
+		nthreads = nopenfd - 1;
+	}
+	nopenfd -= nthreads;
+#endif
 
 	state->ioq = NULL;
 	if (nthreads > 0) {
@@ -517,6 +524,8 @@ static int bftw_state_init(struct bftw_state *state, const struct bftw_args *arg
 		}
 	}
 	state->nthreads = nthreads;
+
+	bftw_cache_init(&state->cache, nopenfd);
 
 	SLIST_INIT(&state->dirs);
 	SLIST_INIT(&state->files);
